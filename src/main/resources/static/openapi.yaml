@@ -4,9 +4,6 @@ info:
   title: "Channel-Talk Notion Integration API"
   description: "채널톡과 노션을 연동하는 서비스 API 명세"
   version: "1.0.0"
-servers:
-  - url: "/v1"
-    description: "API V1 Base Path"
 
 # ===============================================
 # 1. API Paths (엔드포인트 정의)
@@ -400,6 +397,47 @@ paths:
                 $ref: '#/components/schemas/InquiryResponse'
         '400':
           description: Bad request
+
+  /inquiries/analyze:
+    post:
+      summary: "채팅 메시지 LLM 분석"
+      description: |
+        채팅 메시지를 LLM으로 분석하여 부서 분류, 요약, 주요 피드백을 추출합니다.
+        이 API는 문의 생성 전에 미리 분석 결과를 확인하거나, 별도로 분석이 필요한 경우 사용합니다.
+      tags: ["Inquiries & Tags"]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatAnalysisRequest"
+      responses:
+        '200':
+          description: "LLM 분석 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatAnalysisResponse"
+        '400':
+          description: "잘못된 요청 (chatMessages가 비어있거나 형식 오류)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: "인증 실패"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "LLM 분석 실패 (OpenAI API 오류 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /inquiries/{inquiryId}:
     get:
@@ -953,6 +991,11 @@ components:
         departmentIds:
           type: array
           items: { type: string, format: uuid }
+        chatMessages:
+          type: array
+          description: "채팅 메시지 목록 (LLM 분석용). 채널톡 API 응답에서 필요한 필드만 추출하여 전달합니다."
+          items:
+            $ref: '#/components/schemas/ChatMessage'
     InquiryResponse:
       type: object
       properties:
@@ -1081,6 +1124,42 @@ components:
         - sender
         - message
         - timestamp
+
+    ChatAnalysisRequest:
+      type: object
+      description: "채팅 메시지 LLM 분석 요청"
+      properties:
+        chatMessages:
+          type: array
+          description: "분석할 채팅 메시지 목록"
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+          minItems: 1
+      required:
+        - chatMessages
+
+    ChatAnalysisResponse:
+      type: object
+      description: "채팅 메시지 LLM 분석 결과"
+      properties:
+        department:
+          type: array
+          description: "분류된 부서 목록 (QA팀, 마케팅, 개발팀, 운영팀, 기획팀 중 하나 이상)"
+          items:
+            type: string
+          example: ["개발팀", "운영팀"]
+        summary:
+          type: string
+          description: "문의 요약 (200자 이내)"
+          example: "로그인 버튼 클릭 시 반응 없음 (크롬 브라우저)"
+        keyFeedback:
+          type: string
+          description: "주요 피드백 (없으면 빈 문자열)"
+          example: "로그인 기능 오류"
+      required:
+        - department
+        - summary
+        - keyFeedback
 
     TagsConfigRequest:
       type: object
