@@ -1,4 +1,4 @@
-package channal.bfs.controller;
+package channal.bfs.system.presentation;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//db 연결 테스트용 api 
+// db 연결 테스트용 api
 @RestController
 @RequestMapping("/api/db")
 public class DbPingController {
