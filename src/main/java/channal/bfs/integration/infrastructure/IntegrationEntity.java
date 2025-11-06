@@ -45,6 +45,9 @@ public class IntegrationEntity {
     @Column(name = "channel_talk_api_key", columnDefinition = "TEXT")
     private String channelTalkApiKey;
 
+    @Column(name = "channel_talk_api_secret", columnDefinition = "TEXT")
+    private String channelTalkApiSecret;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

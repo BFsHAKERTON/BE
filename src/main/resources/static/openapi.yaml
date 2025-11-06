@@ -899,10 +899,15 @@ components:
       properties:
         apiKey:
           type: string
-          description: "사용자가 발급받은 채널톡 API Key"
-          example: "ch-api-key-..."
+          description: "사용자가 발급받은 채널톡 Access Key"
+          example: "ch-access-key-..."
+        apiSecret:
+          type: string
+          description: "사용자가 발급받은 채널톡 Access Secret"
+          example: "ch-access-secret-..."
       required:
         - apiKey
+        - apiSecret
 
     NotionStatusResponse:
       type: object
