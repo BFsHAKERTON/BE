@@ -8,9 +8,28 @@ import java.util.UUID;
 
 @Repository
 public class JpaUserRepository implements UserRepository {
+    
+    private final AppUserJpaRepository jpaRepository;
+    
+    public JpaUserRepository(AppUserJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
+    
     @Override
-    public Optional<Object> findById(UUID userId) {
-        return Optional.empty();
+    public Optional<AppUserEntity> findById(UUID userId) {
+        return jpaRepository.findById(userId);
+    }
+    
+    public Optional<AppUserEntity> findByEmail(String email) {
+        return jpaRepository.findByEmail(email);
+    }
+    
+    public Optional<AppUserEntity> findByKakaoId(String kakaoId) {
+        return jpaRepository.findByKakaoId(kakaoId);
+    }
+    
+    public AppUserEntity save(AppUserEntity user) {
+        return jpaRepository.save(user);
     }
 }
 

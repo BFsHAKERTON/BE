@@ -364,6 +364,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    
+    post:
+      summary: Create inquiry
+      operationId: inquiriesPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InquiryCreateRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: Resource URL
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InquiryResponse'
+        '400':
+          description: Bad request
 
   /inquiries/{inquiryId}:
     get:
@@ -754,6 +777,54 @@ components:
         - totalCount
 
     # Inquiries & Tags
+    InquiryStatus:
+      type: string
+      enum: [NEW, IN_PROGRESS, DONE]
+      description: 신규, 처리중, 처리완료
+    InquiryCreateRequest:
+      type: object
+      required: [title, requesterId]
+      properties:
+        title: { type: string, maxLength: 200 }
+        tagIds:
+          type: array
+          items: { type: string, format: uuid }
+        status:
+          $ref: '#/components/schemas/InquiryStatus'
+          default: NEW
+        requesterId: { type: string, format: uuid }
+        assigneeIds:
+          type: array
+          items: { type: string, format: uuid }
+        summary: { type: string, maxLength: 2000 }
+        keyFeedback: { type: string, maxLength: 4000 }
+        channelTalkUrl: { type: string, format: uri }
+        notionPageUrl: { type: string, format: uri }
+        departmentIds:
+          type: array
+          items: { type: string, format: uuid }
+    InquiryResponse:
+      type: object
+      properties:
+        inquiryId: { type: string, format: uuid }
+        title: { type: string }
+        tagIds:
+          type: array
+          items: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/InquiryStatus' }
+        requesterId: { type: string, format: uuid }
+        assigneeIds:
+          type: array
+          items: { type: string, format: uuid }
+        summary: { type: string }
+        keyFeedback: { type: string }
+        channelTalkUrl: { type: string, format: uri }
+        notionPageUrl: { type: string, format: uri }
+        departmentIds:
+          type: array
+          items: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+
     InquirySummary:
       type: object
       description: "문의 리스트의 개별 항목 (요약)"
