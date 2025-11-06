@@ -593,6 +593,143 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /notion/pages/{pageId}:
+    get:
+      summary: "노션 페이지 조회"
+      description: "특정 노션 페이지의 정보를 조회합니다."
+      tags: ["Notion"]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pageId
+          schema:
+            type: string
+          required: true
+          description: "조회할 노션 페이지 ID"
+      responses:
+        '200':
+          description: "페이지 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionPageResponse"
+        '401':
+          description: "인증 실패"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: "페이지를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      summary: "노션 페이지 수정"
+      description: "특정 노션 페이지의 속성을 수정합니다."
+      tags: ["Notion"]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pageId
+          schema:
+            type: string
+          required: true
+          description: "수정할 노션 페이지 ID"
+      requestBody:
+        description: "수정할 페이지 속성"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotionPageRequest"
+            example:
+              properties:
+                title:
+                  title:
+                    - text:
+                        content: "업데이트된 제목"
+      responses:
+        '200':
+          description: "페이지 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionPageResponse"
+        '400':
+          description: "잘못된 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: "인증 실패"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: "페이지를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /notion/pages:
+    post:
+      summary: "노션 페이지 생성"
+      description: "새로운 노션 페이지를 생성합니다."
+      tags: ["Notion"]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: "생성할 페이지 정보"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotionPageRequest"
+            example:
+              parent:
+                type: "page_id"
+                page_id: "id"
+              properties:
+                title:
+                  title:
+                    - text:
+                        content: "생성한 페이지"
+              children:
+                - object: "block"
+                  type: "paragraph"
+                  paragraph:
+                    rich_text:
+                      - type: "text"
+                        text:
+                          content: "제목"
+      responses:
+        '201':
+          description: "페이지 생성 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionPageResponse"
+        '400':
+          description: "잘못된 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: "인증 실패"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # ---------------------------------------------
   # /webhooks
   # ---------------------------------------------
