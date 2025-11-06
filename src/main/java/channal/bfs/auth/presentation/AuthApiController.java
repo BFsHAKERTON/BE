@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -46,23 +47,35 @@ public class AuthApiController implements AuthApi {
         this.frontendRedirectUri = frontendRedirectUri;
     }
 
+    // 인터페이스 구현 (YAML에 맞춰 redirectUri 파라미터 추가됨)
     @Override
-    public ResponseEntity<Void> authKakaoGet() {
-        String authUrl = kakaoOAuthClient.getAuthorizationUrl(null);
+    public ResponseEntity<Void> authKakaoGet(URI redirectUri) {
+        // redirectUri를 state로 인코딩하여 카카오에 전달
+        // 콜백에서 state를 읽어서 원래 URL로 리다이렉트
+        String state = redirectUri != null ? java.net.URLEncoder.encode(redirectUri.toString(), java.nio.charset.StandardCharsets.UTF_8) : null;
+        String authUrl = kakaoOAuthClient.getAuthorizationUrl(state);
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header(HttpHeaders.LOCATION, authUrl)
                 .build();
     }
 
-    // 인터페이스 구현 대신 직접 구현 (HTML 반환을 위해)
-    @GetMapping("/auth/kakao/callback")
-    public ResponseEntity<String> authKakaoCallback(
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String error) {
+    // 인터페이스 구현 (YAML에 맞춰 HTML 반환 및 state 파라미터 추가됨)
+    @Override
+    public ResponseEntity<String> authKakaoCallbackGet(String code, String error, String state) {
         try {
+            // state에서 원래 리다이렉트 URL 추출 (없으면 기본값 사용)
+            String targetRedirectUri = frontendRedirectUri;
+            if (state != null && !state.isBlank()) {
+                try {
+                    targetRedirectUri = java.net.URLDecoder.decode(state, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    // 디코딩 실패 시 기본값 사용
+                }
+            }
+            
             if (error != null) {
-                // 에러 시 프론트엔드로 리디렉션 (에러 정보 포함)
-                String errorRedirectUrl = frontendRedirectUri + "?error=" + error;
+                // 에러 시 원래 URL로 리디렉션 (에러 정보 포함)
+                String errorRedirectUrl = targetRedirectUri + (targetRedirectUri.contains("?") ? "&" : "?") + "error=" + error;
                 String html = generateRedirectHtml(errorRedirectUrl, null, "카카오 인증이 취소되었습니다: " + error);
                 return ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
@@ -71,23 +84,39 @@ public class AuthApiController implements AuthApi {
 
             AuthCommandService.TokenPair tokenPair = authCommandService.handleKakaoCallback(code);
             
-            // 성공 시 프론트엔드로 리디렉션 (토큰을 HTML에 포함)
-            String html = generateRedirectHtml(frontendRedirectUri, tokenPair, null);
+            // 성공 시 원래 URL로 리디렉션 (토큰을 HTML에 포함)
+            String html = generateRedirectHtml(targetRedirectUri, tokenPair, null);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(html);
             
         } catch (AppException e) {
-            // 에러 시 프론트엔드로 리디렉션
-            String errorRedirectUrl = frontendRedirectUri + "?error=" + e.getErrorCode() + "&message=" + e.getMessage();
+            // 에러 시 원래 URL로 리디렉션
+            String targetRedirectUri = frontendRedirectUri;
+            if (state != null && !state.isBlank()) {
+                try {
+                    targetRedirectUri = java.net.URLDecoder.decode(state, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception ex) {
+                    // 디코딩 실패 시 기본값 사용
+                }
+            }
+            String errorRedirectUrl = targetRedirectUri + (targetRedirectUri.contains("?") ? "&" : "?") + "error=" + e.getErrorCode() + "&message=" + java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
             String html = generateRedirectHtml(errorRedirectUrl, null, e.getMessage());
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(html);
         } catch (Exception e) {
-            // 에러 시 프론트엔드로 리디렉션
-            String errorRedirectUrl = frontendRedirectUri + "?error=INTERNAL_ERROR&message=서버 오류가 발생했습니다.";
+            // 에러 시 원래 URL로 리디렉션
+            String targetRedirectUri = frontendRedirectUri;
+            if (state != null && !state.isBlank()) {
+                try {
+                    targetRedirectUri = java.net.URLDecoder.decode(state, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception ex) {
+                    // 디코딩 실패 시 기본값 사용
+                }
+            }
+            String errorRedirectUrl = targetRedirectUri + (targetRedirectUri.contains("?") ? "&" : "?") + "error=INTERNAL_ERROR&message=" + java.net.URLEncoder.encode("서버 오류가 발생했습니다.", java.nio.charset.StandardCharsets.UTF_8);
             String html = generateRedirectHtml(errorRedirectUrl, null, "서버 오류가 발생했습니다.");
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -110,13 +139,13 @@ public class AuthApiController implements AuthApi {
                         localStorage.setItem('accessToken', '%s');
                         localStorage.setItem('refreshToken', '%s');
                         
-                        // 프론트엔드로 리디렉션
+                        // 원래 페이지로 리디렉션
                         window.location.href = '%s';
                     </script>
                     <p>로그인 처리 중...</p>
                 </body>
                 </html>
-                """, tokenPair.accessToken(), tokenPair.refreshToken(), frontendRedirectUri);
+                """, tokenPair.accessToken(), tokenPair.refreshToken(), redirectUrl);
         } else {
             // 에러: 에러 메시지와 함께 리디렉션
             return String.format("""

@@ -18,8 +18,16 @@ paths:
   /auth/kakao:
     get:
       summary: "카카오 로그인 시작"
-      description: "사용자를 카카오 인증 페이지로 리디렉션합니다."
+      description: "사용자를 카카오 인증 페이지로 리디렉션합니다. redirectUri를 지정하면 로그인 완료 후 해당 URL로 리디렉션됩니다."
       tags: ["Authentication"]
+      parameters:
+        - in: query
+          name: redirectUri
+          schema:
+            type: string
+            format: uri
+          required: false
+          description: "로그인 완료 후 리디렉션할 URL (없으면 기본값 사용)"
       responses:
         '302':
           description: "카카오 인증 페이지로 리디렉션"
@@ -33,14 +41,14 @@ paths:
   /auth/kakao/callback:
     get:
       summary: "카카오 로그인 콜백"
-      description: "카카오 인증 성공 후, 서비스 자체 토큰(JWT)을 발급합니다."
+      description: "카카오 인증 성공 후, HTML 페이지를 반환하여 토큰을 localStorage에 저장하고 지정된 URL로 리디렉션합니다."
       tags: ["Authentication"]
       parameters:
         - in: query
           name: code
           schema:
             type: string
-          required: true
+          required: false
           description: "카카오에서 발급한 1회용 인증 코드"
         - in: query
           name: error
@@ -48,22 +56,27 @@ paths:
             type: string
           required: false
           description: "인증 실패 시 에러 코드 (예: access_denied)"
+        - in: query
+          name: state
+          schema:
+            type: string
+          required: false
+          description: "로그인 시작 시 전달한 redirectUri (인코딩된 상태)"
       responses:
         '200':
-          description: "로그인 성공, 서비스 토큰 발급"
+          description: "로그인 성공, HTML 페이지 반환 (토큰 저장 후 리디렉션)"
           content:
-            application/json:
+            text/html:
               schema:
-                $ref: "#/components/schemas/AuthTokens"
+                type: string
+                example: "<html><body><script>localStorage.setItem('accessToken', '...'); window.location.href='...';</script></body></html>"
         '400':
           description: "유효하지 않은 요청 (예: code 누락, 유효하지 않은 code)"
           content:
-            application/json:
+            text/html:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-                example:
-                  error: "INVALID_KAKAO_CODE"
-                  message: "유효하지 않은 카카오 인증 코드입니다."
+                type: string
+                example: "<html><body><script>window.location.href='...?error=INVALID_KAKAO_CODE';</script></body></html>"
 
   /auth/me:
     get:
