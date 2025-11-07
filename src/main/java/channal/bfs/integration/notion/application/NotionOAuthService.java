@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -42,9 +43,27 @@ public class NotionOAuthService {
     /**
      * OAuth 인증 URL 생성
      */
-    public String getAuthorizationUrl() {
-        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s",
-                authUrl, clientId, redirectUri);
+    public String getAuthorizationUrl(UUID userId) {
+        // userId를 state 파라미터에 포함 (CSRF 방지 및 callback에서 사용)
+        String state = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(userId.toString().getBytes(StandardCharsets.UTF_8));
+
+        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s&state=%s",
+                authUrl, clientId, redirectUri, state);
+    }
+
+    /**
+     * state 파라미터에서 userId 추출
+     */
+    public UUID extractUserIdFromState(String state) {
+        try {
+            byte[] decodedBytes = Base64.getUrlDecoder().decode(state);
+            String userIdStr = new String(decodedBytes, StandardCharsets.UTF_8);
+            return UUID.fromString(userIdStr);
+        } catch (Exception e) {
+            log.error("Failed to extract userId from state", e);
+            throw new RuntimeException("Invalid state parameter", e);
+        }
     }
 
     /**
@@ -88,7 +107,7 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 저장
      */
-    public void saveToken(Long userId, NotionOAuthTokenResponse tokenResponse) {
+    public void saveToken(UUID userId, NotionOAuthTokenResponse tokenResponse) {
         log.info("Saving Notion token for user: {}", userId);
 
         NotionToken token = notionTokenRepository.findByUserId(userId)
@@ -110,7 +129,7 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 조회
      */
-    public String getAccessToken(Long userId) {
+    public String getAccessToken(UUID userId) {
         return notionTokenRepository.findByUserId(userId)
                 .map(NotionToken::getAccessToken)
                 .orElseThrow(() -> new RuntimeException("Notion token not found for user: " + userId));
@@ -119,7 +138,7 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 존재 여부 확인
      */
-    public boolean hasToken(Long userId) {
+    public boolean hasToken(UUID userId) {
         return notionTokenRepository.existsByUserId(userId);
     }
 }

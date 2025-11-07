@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/notion")
 @RequiredArgsConstructor
@@ -22,8 +24,33 @@ public class NotionApiController implements NotionApi {
     public ResponseEntity<NotionDatabaseQueryResponse> queryDatabase(
             @PathVariable String databaseId,
             @RequestBody NotionDatabaseQueryRequest request,
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId) {
+            @RequestParam(value = "userId") UUID userId) {
         NotionDatabaseQueryResponse response = notionService.queryDatabase(userId, databaseId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 데이터베이스 생성 (작업 관리 보드)
+     * POST /api/notion/databases?userId=1
+     */
+    @PostMapping("/databases")
+    public ResponseEntity<NotionDatabaseCreateResponse> createDatabase(
+            @RequestBody NotionDatabaseCreateRequest request,
+            @RequestParam(value = "userId") UUID userId) {
+        NotionDatabaseCreateResponse response = notionService.createDatabase(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 데이터베이스 업데이트
+     * PATCH /api/notion/databases/{databaseId}?userId=1
+     */
+    @PatchMapping("/databases/{databaseId}")
+    public ResponseEntity<NotionDatabaseCreateResponse> updateDatabase(
+            @PathVariable String databaseId,
+            @RequestBody NotionDatabaseUpdateRequest request,
+            @RequestParam(value = "userId") UUID userId) {
+        NotionDatabaseCreateResponse response = notionService.updateDatabase(userId, databaseId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -34,7 +61,7 @@ public class NotionApiController implements NotionApi {
     @PostMapping("/pages")
     public ResponseEntity<NotionPage> createPage(
             @RequestBody NotionPageCreateRequest request,
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId) {
+            @RequestParam(value = "userId") UUID userId) {
         NotionPage page = notionService.createPage(userId, request);
         return ResponseEntity.ok(page);
     }
@@ -46,7 +73,7 @@ public class NotionApiController implements NotionApi {
     @GetMapping("/pages/{pageId}")
     public ResponseEntity<NotionPage> getPage(
             @PathVariable String pageId,
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId) {
+            @RequestParam(value = "userId") UUID userId) {
         NotionPage page = notionService.getPage(userId, pageId);
         return ResponseEntity.ok(page);
     }
@@ -59,7 +86,7 @@ public class NotionApiController implements NotionApi {
     public ResponseEntity<NotionPage> updatePage(
             @PathVariable String pageId,
             @RequestBody NotionPageUpdateRequest request,
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId) {
+            @RequestParam(value = "userId") UUID userId) {
         NotionPage page = notionService.updatePage(userId, pageId, request);
         return ResponseEntity.ok(page);
     }

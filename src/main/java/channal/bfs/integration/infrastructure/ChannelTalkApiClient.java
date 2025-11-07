@@ -1,7 +1,10 @@
 package channal.bfs.integration.infrastructure;
 
+import channal.bfs.model.ChatMessage;
+import channal.bfs.inquiry.infrastructure.ChannelTalkMessageConverter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -9,6 +12,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 채널톡 API 클라이언트
@@ -23,6 +28,12 @@ public class ChannelTalkApiClient {
     private static final String VALIDATION_ENDPOINT = "/open/v5/channel";
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+
+    @Value("${channel-talk.system.api-key:}")
+    private String systemApiKey;
+
+    @Value("${channel-talk.system.api-secret:}")
+    private String systemApiSecret;
 
     public ChannelTalkApiClient() {
         this.objectMapper = new ObjectMapper();
@@ -72,6 +83,57 @@ public class ChannelTalkApiClient {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * 채팅방의 모든 메시지를 조회합니다.
+     * 시스템 API Key를 사용합니다.
+     *
+     * @param chatId 채팅방 ID (예: "690e09fc53e4533bdfaf")
+     * @return 채팅 메시지 리스트
+     * @throws Exception API 호출 실패 시
+     */
+    public List<ChatMessage> getChatMessages(String chatId) throws Exception {
+        if (chatId == null || chatId.isBlank()) {
+            throw new IllegalArgumentException("chatId는 필수입니다.");
+        }
+
+        if (systemApiKey == null || systemApiKey.isBlank() ||
+            systemApiSecret == null || systemApiSecret.isBlank()) {
+            throw new IllegalStateException("시스템 채널톡 API Key가 설정되지 않았습니다.");
+        }
+
+        // 채널톡 API: GET /open/v5/user-chats/{chatId}/messages
+        String endpoint = String.format("/open/v5/user-chats/%s/messages", chatId);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(CHANNEL_TALK_API_BASE_URL + endpoint))
+                .header("accept", "application/json")
+                .header("x-access-key", systemApiKey)
+                .header("x-access-secret", systemApiSecret)
+                .GET()
+                .timeout(Duration.ofSeconds(15))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            System.err.println("채널톡 메시지 조회 실패: " + response.statusCode());
+            System.err.println("응답 본문: " + response.body());
+            throw new RuntimeException("채널톡 메시지 조회 실패: HTTP " + response.statusCode());
+        }
+
+        // JSON 파싱
+        JsonNode rootNode = objectMapper.readTree(response.body());
+        JsonNode messagesNode = rootNode.get("messages");
+
+        if (messagesNode == null || !messagesNode.isArray()) {
+            System.err.println("채널톡 응답에 messages 배열이 없습니다.");
+            return new ArrayList<>();
+        }
+
+        // ChannelTalkMessageConverter를 사용해서 변환
+        return ChannelTalkMessageConverter.convertMessages(messagesNode);
     }
 }
 

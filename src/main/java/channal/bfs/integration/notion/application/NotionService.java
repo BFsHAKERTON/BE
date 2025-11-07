@@ -5,6 +5,9 @@ import channal.bfs.integration.notion.infrastructure.NotionClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import java.util.UUID;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,7 @@ public class NotionService {
      * @param request 쿼리 요청
      * @return 쿼리 결과
      */
-    public NotionDatabaseQueryResponse queryDatabase(Long userId, String databaseId, NotionDatabaseQueryRequest request) {
+    public NotionDatabaseQueryResponse queryDatabase(UUID userId, String databaseId, NotionDatabaseQueryRequest request) {
         log.info("Querying Notion database: {} for user: {}", databaseId, userId);
         try {
             return notionClient.queryDatabase(userId, databaseId, request);
@@ -31,12 +34,45 @@ public class NotionService {
     }
 
     /**
+     * 데이터베이스 생성 (작업 관리 보드)
+     * @param userId 사용자 ID
+     * @param request 데이터베이스 생성 요청
+     * @return 생성된 데이터베이스 정보
+     */
+    public NotionDatabaseCreateResponse createDatabase(UUID userId, NotionDatabaseCreateRequest request) {
+        log.info("Creating Notion database for user: {}", userId);
+        try {
+            return notionClient.createDatabase(userId, request);
+        } catch (Exception e) {
+            log.error("Failed to create database for user: {}", userId, e);
+            throw new RuntimeException("Failed to create Notion database", e);
+        }
+    }
+
+    /**
+     * 데이터베이스 업데이트
+     * @param userId 사용자 ID
+     * @param databaseId 데이터베이스 ID
+     * @param request 업데이트 요청
+     * @return 업데이트된 데이터베이스 정보
+     */
+    public NotionDatabaseCreateResponse updateDatabase(UUID userId, String databaseId, NotionDatabaseUpdateRequest request) {
+        log.info("Updating Notion database: {} for user: {}", databaseId, userId);
+        try {
+            return notionClient.updateDatabase(userId, databaseId, request);
+        } catch (Exception e) {
+            log.error("Failed to update database: {} for user: {}", databaseId, userId, e);
+            throw new RuntimeException("Failed to update Notion database", e);
+        }
+    }
+
+    /**
      * 페이지 생성
      * @param userId 사용자 ID
      * @param request 페이지 생성 요청
      * @return 생성된 페이지 정보
      */
-    public NotionPage createPage(Long userId, NotionPageCreateRequest request) {
+    public NotionPage createPage(UUID userId, NotionPageCreateRequest request) {
         log.info("Creating Notion page for user: {}", userId);
         try {
             return notionClient.createPage(userId, request);
@@ -52,7 +88,7 @@ public class NotionService {
      * @param pageId 페이지 ID
      * @return 페이지 정보
      */
-    public NotionPage getPage(Long userId, String pageId) {
+    public NotionPage getPage(UUID userId, String pageId) {
         log.info("Getting Notion page: {} for user: {}", pageId, userId);
         try {
             return notionClient.getPage(userId, pageId);
@@ -69,7 +105,7 @@ public class NotionService {
      * @param request 업데이트 요청
      * @return 업데이트된 페이지 정보
      */
-    public NotionPage updatePage(Long userId, String pageId, NotionPageUpdateRequest request) {
+    public NotionPage updatePage(UUID userId, String pageId, NotionPageUpdateRequest request) {
         log.info("Updating Notion page: {} for user: {}", pageId, userId);
         try {
             return notionClient.updatePage(userId, pageId, request);
