@@ -43,9 +43,27 @@ public class NotionOAuthService {
     /**
      * OAuth 인증 URL 생성
      */
-    public String getAuthorizationUrl() {
-        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s",
-                authUrl, clientId, redirectUri);
+    public String getAuthorizationUrl(UUID userId) {
+        // userId를 state 파라미터에 포함 (CSRF 방지 및 callback에서 사용)
+        String state = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(userId.toString().getBytes(StandardCharsets.UTF_8));
+
+        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s&state=%s",
+                authUrl, clientId, redirectUri, state);
+    }
+
+    /**
+     * state 파라미터에서 userId 추출
+     */
+    public UUID extractUserIdFromState(String state) {
+        try {
+            byte[] decodedBytes = Base64.getUrlDecoder().decode(state);
+            String userIdStr = new String(decodedBytes, StandardCharsets.UTF_8);
+            return UUID.fromString(userIdStr);
+        } catch (Exception e) {
+            log.error("Failed to extract userId from state", e);
+            throw new RuntimeException("Invalid state parameter", e);
+        }
     }
 
     /**

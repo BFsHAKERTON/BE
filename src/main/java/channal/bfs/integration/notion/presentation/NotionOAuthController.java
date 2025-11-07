@@ -21,12 +21,14 @@ public class NotionOAuthController {
 
     /**
      * Notion OAuth 로그인 시작
-     * GET /api/notion/oauth/login
+     * GET /api/notion/oauth/login?userId=xxx
      */
     @GetMapping("/login")
-    public ResponseEntity<Map<String, String>> login() {
-        log.info("Notion OAuth login requested");
-        String authUrl = notionOAuthService.getAuthorizationUrl();
+    public ResponseEntity<Map<String, String>> login(
+            @RequestParam("userId") UUID userId
+    ) {
+        log.info("Notion OAuth login requested for user: {}", userId);
+        String authUrl = notionOAuthService.getAuthorizationUrl(userId);
 
         Map<String, String> response = new HashMap<>();
         response.put("authorizationUrl", authUrl);
@@ -37,16 +39,20 @@ public class NotionOAuthController {
 
     /**
      * Notion OAuth Callback
-     * GET /api/notion/oauth/callback?code=xxx
+     * GET /api/notion/oauth/callback?code=xxx&state=xxx
      */
     @GetMapping("/callback")
     public ResponseEntity<Map<String, Object>> callback(
             @RequestParam("code") String code,
-            @RequestParam(value = "userId") UUID userId
+            @RequestParam("state") String state
     ) {
-        log.info("Notion OAuth callback received with code");
+        log.info("Notion OAuth callback received with code and state");
 
         try {
+            // state에서 userId 추출
+            UUID userId = notionOAuthService.extractUserIdFromState(state);
+            log.info("Extracted userId from state: {}", userId);
+
             // Authorization code를 Access Token으로 교환
             NotionOAuthTokenResponse tokenResponse = notionOAuthService.exchangeCodeForToken(code);
 
