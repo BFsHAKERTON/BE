@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.8.0'
 }
 
 group = 'CHANNAL'
@@ -27,10 +28,58 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.fasterxml.jackson.core:jackson-databind' // JSON <-> Java 변환 쉽게
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // 비동기 처리를 위해 추가
+    implementation 'org.apache.httpcomponents.client5:httpclient5' // PATCH 메서드 지원
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/src/main/resources/static/openapi.yaml"
+    outputDir = "$buildDir/generated/openapi"
+    apiPackage = 'channal.bfs.api'
+    modelPackage = 'channal.bfs.model'
+    invokerPackage = 'channal.bfs.invoker'
+    configOptions = [
+            interfaceOnly   : 'true',
+            useSpringBoot3  : 'true',
+            useJakartaEe    : 'true',
+            dateLibrary     : 'java8',
+            delegatePattern : 'true',
+            hideGenerationTimestamp: 'true',
+            useBeanValidation: 'true'
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/openapi/src/main/java"
+        }
+        resources {
+            srcDir "$buildDir/generated/openapi/src/main/resources"
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn tasks.openApiGenerate
+}
+
+tasks.named('processResources') {
+    dependsOn tasks.openApiGenerate
 }
 
 tasks.named('test') {
