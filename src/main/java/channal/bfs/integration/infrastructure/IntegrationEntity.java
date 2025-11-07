@@ -2,6 +2,7 @@ package channal.bfs.integration.infrastructure;
 
 import channal.bfs.auth.infrastructure.AppUserEntity;
 import channal.bfs.common.domain.IntegrationType;
+import channal.bfs.integration.notion.domain.NotionToken;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,15 +32,19 @@ public class IntegrationEntity {
     @Column(nullable = false)
     private IntegrationType type;
 
-    // 노션용
-    @Column(name = "notion_access_token", columnDefinition = "TEXT")
-    private String notionAccessToken;
-
-    @Column(name = "notion_workspace_name")
-    private String notionWorkspaceName;
-
-    @Column(name = "notion_workspace_url")
-    private String notionWorkspaceUrl;
+//    // 노션용
+//    @Column(name = "notion_access_token", columnDefinition = "TEXT")
+//    private String notionAccessToken;
+//
+//    @Column(name = "notion_workspace_name")
+//    private String notionWorkspaceName;
+//
+//    @Column(name = "notion_workspace_url")
+//    private String notionWorkspaceUrl;
+    // 노션용 (추가) - notion_tokens 테이블 참조
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notion_token_id")
+    private NotionToken notionToken;
 
     // 채널톡용
     @Column(name = "channel_talk_api_key", columnDefinition = "TEXT")

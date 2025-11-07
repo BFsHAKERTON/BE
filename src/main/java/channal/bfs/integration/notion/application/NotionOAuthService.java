@@ -1,5 +1,11 @@
 package channal.bfs.integration.notion.application;
 
+import channal.bfs.auth.infrastructure.AppUserEntity;
+import channal.bfs.auth.infrastructure.JpaUserRepository;
+import channal.bfs.common.domain.IntegrationType;
+import channal.bfs.common.exception.AppException;
+import channal.bfs.integration.infrastructure.IntegrationEntity;
+import channal.bfs.integration.infrastructure.IntegrationJpaRepository;
 import channal.bfs.integration.notion.domain.NotionToken;
 import channal.bfs.integration.notion.domain.NotionTokenRepository;
 import channal.bfs.integration.notion.dto.NotionOAuthTokenRequest;
@@ -7,21 +13,30 @@ import channal.bfs.integration.notion.dto.NotionOAuthTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class NotionOAuthService {
 
     private final NotionTokenRepository notionTokenRepository;
+    private final JpaUserRepository userRepository;
+    private final IntegrationJpaRepository integrationRepository;
     private final RestTemplate restTemplate;
 
     @Value("${notion.oauth.client-id}")
@@ -42,9 +57,10 @@ public class NotionOAuthService {
     /**
      * OAuth 인증 URL 생성
      */
-    public String getAuthorizationUrl() {
-        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s",
-                authUrl, clientId, redirectUri);
+    public String getAuthorizationUrl(UUID userId) {
+        String state = URLEncoder.encode(userId.toString(), StandardCharsets.UTF_8);
+        return String.format("%s?client_id=%s&response_type=code&owner=user&redirect_uri=%s&state=%s",
+                authUrl, clientId, redirectUri, state);
     }
 
     /**
@@ -88,12 +104,13 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 저장
      */
-    public void saveToken(Long userId, NotionOAuthTokenResponse tokenResponse) {
+    public void saveToken(UUID userId, NotionOAuthTokenResponse tokenResponse) {
         log.info("Saving Notion token for user: {}", userId);
-
-        NotionToken token = notionTokenRepository.findByUserId(userId)
+        AppUserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("USER_NOT_FOUND", "사용자를 찾을 수 없습니다"+ userId));
+        NotionToken token = notionTokenRepository.findByUser_Id(userId)
                 .orElse(NotionToken.builder()
-                        .userId(userId)
+                        .user(user)
                         .build());
 
         token.updateToken(
@@ -103,15 +120,26 @@ public class NotionOAuthService {
                 tokenResponse.getBotId()
         );
 
-        notionTokenRepository.save(token);
+        NotionToken savedToken = notionTokenRepository.save(token);
         log.info("Notion token saved successfully for user: {}", userId);
+
+        IntegrationEntity integration = integrationRepository
+                .findByUserIdAndType(userId, IntegrationType.NOTION)
+                .orElse(new IntegrationEntity());
+
+        integration.setUser(user);
+        integration.setType(IntegrationType.NOTION);
+        integration.setNotionToken(savedToken);
+
+        integrationRepository.save(integration);
+        log.info("Integration entity updated for Notion user: {}", userId);
     }
 
     /**
      * 사용자의 토큰 조회
      */
-    public String getAccessToken(Long userId) {
-        return notionTokenRepository.findByUserId(userId)
+    public String getAccessToken(UUID userId) {
+        return notionTokenRepository.findByUser_Id(userId)
                 .map(NotionToken::getAccessToken)
                 .orElseThrow(() -> new RuntimeException("Notion token not found for user: " + userId));
     }
@@ -119,7 +147,7 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 존재 여부 확인
      */
-    public boolean hasToken(Long userId) {
-        return notionTokenRepository.existsByUserId(userId);
+    public boolean hasToken(UUID userId) {
+        return notionTokenRepository.existsByUser_Id(userId);
     }
 }
