@@ -45,6 +45,9 @@ public class InquiryEntity {
     @Column(name = "channel_talk_url")
     private String channelTalkUrl;
 
+    @Column(name = "customer_city")
+    private String customerCity;
+
     @Column(name = "notion_page_url")
     private String notionPageUrl;
 
