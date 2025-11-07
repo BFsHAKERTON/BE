@@ -130,6 +130,7 @@ public class InquiriesApiController implements InquiriesApi {
             // 응답 생성
             ChatAnalysisResponse response = new ChatAnalysisResponse();
             response.setDepartment(analysisResult.department() != null ? analysisResult.department() : new ArrayList<>());
+            response.setGeneralSummary(analysisResult.generalSummary() != null ? analysisResult.generalSummary() : "");
             response.setSummary(analysisResult.summary() != null ? analysisResult.summary() : "");
             response.setKeyFeedback(analysisResult.keyFeedback() != null ? analysisResult.keyFeedback() : "");
 
