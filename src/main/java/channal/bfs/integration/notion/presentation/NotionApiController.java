@@ -30,6 +30,31 @@ public class NotionApiController implements NotionApi {
     }
 
     /**
+     * 데이터베이스 생성 (작업 관리 보드)
+     * POST /api/notion/databases?userId=1
+     */
+    @PostMapping("/databases")
+    public ResponseEntity<NotionDatabaseCreateResponse> createDatabase(
+            @RequestBody NotionDatabaseCreateRequest request,
+            @RequestParam(value = "userId") UUID userId) {
+        NotionDatabaseCreateResponse response = notionService.createDatabase(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 데이터베이스 업데이트
+     * PATCH /api/notion/databases/{databaseId}?userId=1
+     */
+    @PatchMapping("/databases/{databaseId}")
+    public ResponseEntity<NotionDatabaseCreateResponse> updateDatabase(
+            @PathVariable String databaseId,
+            @RequestBody NotionDatabaseUpdateRequest request,
+            @RequestParam(value = "userId") UUID userId) {
+        NotionDatabaseCreateResponse response = notionService.updateDatabase(userId, databaseId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 페이지 생성
      * POST /api/notion/pages?userId=1
      */
