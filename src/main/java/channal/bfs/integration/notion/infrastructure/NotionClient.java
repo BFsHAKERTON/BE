@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.UUID;
+
 @Component
 @RequiredArgsConstructor
 public class NotionClient {
@@ -24,7 +26,7 @@ public class NotionClient {
     /**
      * 사용자 토큰으로 HTTP 헤더 생성
      */
-    private HttpHeaders createHeaders(Long userId) {
+    private HttpHeaders createHeaders(UUID userId) {
         HttpHeaders headers = new HttpHeaders();
         String accessToken = oauthService.getAccessToken(userId);
         headers.set("Authorization", "Bearer " + accessToken);
@@ -40,7 +42,7 @@ public class NotionClient {
      * @param request 쿼리 요청 (필터, 정렬 등)
      * @return 쿼리 결과
      */
-    public NotionDatabaseQueryResponse queryDatabase(Long userId, String databaseId, NotionDatabaseQueryRequest request) {
+    public NotionDatabaseQueryResponse queryDatabase(UUID userId, String databaseId, NotionDatabaseQueryRequest request) {
         String url = baseUrl + "/databases/" + databaseId + "/query";
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionDatabaseQueryRequest> entity = new HttpEntity<>(request, headers);
@@ -51,13 +53,27 @@ public class NotionClient {
         return response.getBody();
     }
 
+    public NotionDatabaseCreateResponse createDatabase(UUID userId, NotionDatabaseCreateRequest request){
+        String url = baseUrl + "/databases"; //db생성 엔드포인트 주소
+        HttpHeaders headers = createHeaders(userId);
+        HttpEntity<NotionDatabaseCreateRequest> entity = new HttpEntity<>(request, headers); // HTTP 요청 본문과 헤더를 하나로 묶어주는 객체입니다.
+        ResponseEntity<NotionDatabaseCreateResponse> response = restTemplate.exchange(
+                url,                //설정한 URL
+                HttpMethod.POST,    // Notion API는 POST 메서드를 통해 데이터베이스를 생성
+                entity,             // 만든 헤더 + 본문
+                NotionDatabaseCreateResponse.class // Notion API가 반환하는 JSON을 NotionDatabaseCreateResponse 자바 객체로 자동 변환
+        );
+        return response.getBody();
+    }
+
+
     /**
      * 페이지 생성
      * @param userId 사용자 ID
      * @param request 페이지 생성 요청
      * @return 생성된 페이지 정보
      */
-    public NotionPage createPage(Long userId, NotionPageCreateRequest request) {
+    public NotionPage createPage(UUID userId, NotionPageCreateRequest request) {
         String url = baseUrl + "/pages";
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionPageCreateRequest> entity = new HttpEntity<>(request, headers);
@@ -74,7 +90,7 @@ public class NotionClient {
      * @param pageId 페이지 ID
      * @return 페이지 정보
      */
-    public NotionPage getPage(Long userId, String pageId) {
+    public NotionPage getPage(UUID userId, String pageId) {
         String url = baseUrl + "/pages/" + pageId;
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -92,7 +108,7 @@ public class NotionClient {
      * @param request 업데이트 요청
      * @return 업데이트된 페이지 정보
      */
-    public NotionPage updatePage(Long userId, String pageId, NotionPageUpdateRequest request) {
+    public NotionPage updatePage(UUID userId, String pageId, NotionPageUpdateRequest request) {
         String url = baseUrl + "/pages/" + pageId;
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionPageUpdateRequest> entity = new HttpEntity<>(request, headers);

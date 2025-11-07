@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "notion_tokens")
@@ -21,7 +22,7 @@ public class NotionToken {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private Long userId;
+    private UUID userId;
 
     @Column(nullable = false, length = 500)
     private String accessToken;

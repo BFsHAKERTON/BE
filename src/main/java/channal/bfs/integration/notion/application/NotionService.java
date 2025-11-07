@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,7 +22,7 @@ public class NotionService {
      * @param request 쿼리 요청
      * @return 쿼리 결과
      */
-    public NotionDatabaseQueryResponse queryDatabase(Long userId, String databaseId, NotionDatabaseQueryRequest request) {
+    public NotionDatabaseQueryResponse queryDatabase(UUID userId, String databaseId, NotionDatabaseQueryRequest request) {
         log.info("Querying Notion database: {} for user: {}", databaseId, userId);
         try {
             return notionClient.queryDatabase(userId, databaseId, request);
@@ -36,7 +38,7 @@ public class NotionService {
      * @param request 페이지 생성 요청
      * @return 생성된 페이지 정보
      */
-    public NotionPage createPage(Long userId, NotionPageCreateRequest request) {
+    public NotionPage createPage(UUID userId, NotionPageCreateRequest request) {
         log.info("Creating Notion page for user: {}", userId);
         try {
             return notionClient.createPage(userId, request);
@@ -52,7 +54,7 @@ public class NotionService {
      * @param pageId 페이지 ID
      * @return 페이지 정보
      */
-    public NotionPage getPage(Long userId, String pageId) {
+    public NotionPage getPage(UUID userId, String pageId) {
         log.info("Getting Notion page: {} for user: {}", pageId, userId);
         try {
             return notionClient.getPage(userId, pageId);
@@ -69,7 +71,7 @@ public class NotionService {
      * @param request 업데이트 요청
      * @return 업데이트된 페이지 정보
      */
-    public NotionPage updatePage(Long userId, String pageId, NotionPageUpdateRequest request) {
+    public NotionPage updatePage(UUID userId, String pageId, NotionPageUpdateRequest request) {
         log.info("Updating Notion page: {} for user: {}", pageId, userId);
         try {
             return notionClient.updatePage(userId, pageId, request);
