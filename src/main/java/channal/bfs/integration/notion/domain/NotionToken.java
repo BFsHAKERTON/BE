@@ -22,7 +22,7 @@ public class NotionToken {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true, columnDefinition = "UUID")
     private AppUserEntity user;
 
     @Column(nullable = false, length = 500)

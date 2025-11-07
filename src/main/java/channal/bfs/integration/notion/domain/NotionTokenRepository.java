@@ -8,6 +8,6 @@ import java.util.UUID;
 
 @Repository
 public interface NotionTokenRepository extends JpaRepository<NotionToken, Long> {
-    Optional<NotionToken> findByUserId(UUID userId);
-    boolean existsByUserId(UUID userId);
+    Optional<NotionToken> findByUser_Id(UUID userId);
+    boolean existsByUser_Id(UUID userId);
 }
