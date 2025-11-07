@@ -1,5 +1,11 @@
 package channal.bfs.integration.notion.application;
 
+import channal.bfs.auth.infrastructure.AppUserEntity;
+import channal.bfs.auth.infrastructure.JpaUserRepository;
+import channal.bfs.common.domain.IntegrationType;
+import channal.bfs.common.exception.AppException;
+import channal.bfs.integration.infrastructure.IntegrationEntity;
+import channal.bfs.integration.infrastructure.IntegrationJpaRepository;
 import channal.bfs.integration.notion.domain.NotionToken;
 import channal.bfs.integration.notion.domain.NotionTokenRepository;
 import channal.bfs.integration.notion.dto.NotionOAuthTokenRequest;
@@ -7,6 +13,7 @@ import channal.bfs.integration.notion.dto.NotionOAuthTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -15,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +30,8 @@ import java.util.Base64;
 public class NotionOAuthService {
 
     private final NotionTokenRepository notionTokenRepository;
+    private final JpaUserRepository userRepository;
+    private final IntegrationJpaRepository integrationRepository;
     private final RestTemplate restTemplate;
 
     @Value("${notion.oauth.client-id}")
@@ -88,12 +98,13 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 저장
      */
-    public void saveToken(Long userId, NotionOAuthTokenResponse tokenResponse) {
+    public void saveToken(UUID userId, NotionOAuthTokenResponse tokenResponse) {
         log.info("Saving Notion token for user: {}", userId);
-
+        AppUserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("USER_NOT_FOUND", "사용자를 찾을 수 없습니다"+ userId));
         NotionToken token = notionTokenRepository.findByUserId(userId)
                 .orElse(NotionToken.builder()
-                        .userId(userId)
+                        .user(user)
                         .build());
 
         token.updateToken(
@@ -103,14 +114,25 @@ public class NotionOAuthService {
                 tokenResponse.getBotId()
         );
 
-        notionTokenRepository.save(token);
+        NotionToken savedToken = notionTokenRepository.save(token);
         log.info("Notion token saved successfully for user: {}", userId);
+
+        IntegrationEntity integration = integrationRepository
+                .findByUserIdAndType(userId, IntegrationType.CHANNEL_TALK) //
+                .orElse(new IntegrationEntity());
+
+        integration.setUser(user);
+        integration.setType(IntegrationType.NOTION); //
+        integration.setNotionToken(savedToken); //
+
+        integrationRepository.save(integration);
+        log.info("Integration entity updated for Notion user: {}", userId);
     }
 
     /**
      * 사용자의 토큰 조회
      */
-    public String getAccessToken(Long userId) {
+    public String getAccessToken(UUID userId) {
         return notionTokenRepository.findByUserId(userId)
                 .map(NotionToken::getAccessToken)
                 .orElseThrow(() -> new RuntimeException("Notion token not found for user: " + userId));
@@ -119,7 +141,7 @@ public class NotionOAuthService {
     /**
      * 사용자의 토큰 존재 여부 확인
      */
-    public boolean hasToken(Long userId) {
+    public boolean hasToken(UUID userId) {
         return notionTokenRepository.existsByUserId(userId);
     }
 }

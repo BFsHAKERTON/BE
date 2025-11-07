@@ -1,5 +1,6 @@
 package channal.bfs.integration.notion.domain;
 
+import channal.bfs.auth.infrastructure.AppUserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,8 +21,9 @@ public class NotionToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
+    private AppUserEntity user;
 
     @Column(nullable = false, length = 500)
     private String accessToken;

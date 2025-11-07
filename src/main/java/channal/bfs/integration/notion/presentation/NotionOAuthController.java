@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +42,7 @@ public class NotionOAuthController {
     @GetMapping("/callback")
     public ResponseEntity<Map<String, Object>> callback(
             @RequestParam("code") String code,
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId
+            @RequestParam(value = "userId") UUID userId
     ) {
         log.info("Notion OAuth callback received with code");
 
@@ -77,7 +78,7 @@ public class NotionOAuthController {
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status(
-            @RequestParam(value = "userId", required = false, defaultValue = "1") Long userId
+            @RequestParam(value = "userId") UUID userId
     ) {
         boolean hasToken = notionOAuthService.hasToken(userId);
 

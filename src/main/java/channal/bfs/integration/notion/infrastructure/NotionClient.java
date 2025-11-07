@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class NotionClient {
     /**
      * 사용자 토큰으로 HTTP 헤더 생성
      */
-    private HttpHeaders createHeaders(Long userId) {
+    private HttpHeaders createHeaders(UUID userId) {
         HttpHeaders headers = new HttpHeaders();
         String accessToken = oauthService.getAccessToken(userId);
         headers.set("Authorization", "Bearer " + accessToken);
@@ -40,7 +41,7 @@ public class NotionClient {
      * @param request 쿼리 요청 (필터, 정렬 등)
      * @return 쿼리 결과
      */
-    public NotionDatabaseQueryResponse queryDatabase(Long userId, String databaseId, NotionDatabaseQueryRequest request) {
+    public NotionDatabaseQueryResponse queryDatabase(UUID userId, String databaseId, NotionDatabaseQueryRequest request) {
         String url = baseUrl + "/databases/" + databaseId + "/query";
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionDatabaseQueryRequest> entity = new HttpEntity<>(request, headers);
@@ -57,7 +58,7 @@ public class NotionClient {
      * @param request 페이지 생성 요청
      * @return 생성된 페이지 정보
      */
-    public NotionPage createPage(Long userId, NotionPageCreateRequest request) {
+    public NotionPage createPage(UUID userId, NotionPageCreateRequest request) {
         String url = baseUrl + "/pages";
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionPageCreateRequest> entity = new HttpEntity<>(request, headers);
@@ -74,7 +75,7 @@ public class NotionClient {
      * @param pageId 페이지 ID
      * @return 페이지 정보
      */
-    public NotionPage getPage(Long userId, String pageId) {
+    public NotionPage getPage(UUID userId, String pageId) {
         String url = baseUrl + "/pages/" + pageId;
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -92,7 +93,7 @@ public class NotionClient {
      * @param request 업데이트 요청
      * @return 업데이트된 페이지 정보
      */
-    public NotionPage updatePage(Long userId, String pageId, NotionPageUpdateRequest request) {
+    public NotionPage updatePage(UUID userId, String pageId, NotionPageUpdateRequest request) {
         String url = baseUrl + "/pages/" + pageId;
         HttpHeaders headers = createHeaders(userId);
         HttpEntity<NotionPageUpdateRequest> entity = new HttpEntity<>(request, headers);
